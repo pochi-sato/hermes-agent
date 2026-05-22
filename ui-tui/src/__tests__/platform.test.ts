@@ -536,6 +536,26 @@ describe('isVoiceToggleKey honours configured record key (#18994)', () => {
   })
 })
 
+describe('isMacReadlineCtrl', () => {
+  it('recognizes raw Ctrl+B/F/D as readline editor keys on macOS only', async () => {
+    const { isMacReadlineCtrl } = await importPlatform('darwin')
+
+    expect(isMacReadlineCtrl({ ctrl: true, meta: false, super: false }, 'b', 'b')).toBe(true)
+    expect(isMacReadlineCtrl({ ctrl: true, meta: false, super: false }, 'f', 'f')).toBe(true)
+    expect(isMacReadlineCtrl({ ctrl: true, meta: false, super: false }, 'd', 'd')).toBe(true)
+    expect(isMacReadlineCtrl({ ctrl: true, meta: true, super: false }, 'd', 'd')).toBe(false)
+    expect(isMacReadlineCtrl({ ctrl: true, meta: false, super: true }, 'd', 'd')).toBe(false)
+  })
+
+  it('does not recognize raw Ctrl+B/F/D as mac readline keys on non-macOS', async () => {
+    const { isMacReadlineCtrl } = await importPlatform('linux')
+
+    expect(isMacReadlineCtrl({ ctrl: true, meta: false, super: false }, 'b', 'b')).toBe(false)
+    expect(isMacReadlineCtrl({ ctrl: true, meta: false, super: false }, 'f', 'f')).toBe(false)
+    expect(isMacReadlineCtrl({ ctrl: true, meta: false, super: false }, 'd', 'd')).toBe(false)
+  })
+})
+
 describe('isMacActionFallback', () => {
   it('routes raw Ctrl+K and Ctrl+W to readline kill-to-end / delete-word on macOS', async () => {
     const { isMacActionFallback } = await importPlatform('darwin')

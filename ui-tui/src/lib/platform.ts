@@ -30,6 +30,21 @@ export const isMacActionFallback = (
   target: 'a' | 'e' | 'u' | 'k' | 'w'
 ): boolean => isMac && key.ctrl && !key.meta && key.super !== true && ch.toLowerCase() === target
 
+/** Raw readline Ctrl chords on macOS that must not be treated as text input.
+ *
+ * The TUI's platform action modifier is Cmd on macOS, so raw Ctrl+B/F/D are
+ * not covered by ``isActionMod``. Terminals still deliver them as a printable
+ * ``ch`` plus ``key.ctrl``; without this helper TextInput falls through to the
+ * printable insertion path and types ``b`` / ``f`` / ``d`` instead of moving or
+ * deleting. Keep this separate from action shortcuts so Cmd+D remains the
+ * global exit chord while Ctrl+D keeps readline forward-delete semantics.
+ */
+export const isMacReadlineCtrl = (
+  key: { ctrl: boolean; meta: boolean; super?: boolean },
+  ch: string,
+  target: 'b' | 'f' | 'd'
+): boolean => isMac && key.ctrl && !key.meta && key.super !== true && ch.toLowerCase() === target
+
 /** Match action-modifier + a single character (case-insensitive). */
 export const isAction = (key: { ctrl: boolean; meta: boolean; super?: boolean }, ch: string, target: string): boolean =>
   isActionMod(key) && ch.toLowerCase() === target

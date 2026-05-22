@@ -10,6 +10,7 @@ import {
   isActionMod,
   isMac,
   isMacActionFallback,
+  isMacReadlineCtrl,
   isVoiceToggleKey,
   type ParsedVoiceRecordKey
 } from '../lib/platform.js'
@@ -897,13 +898,16 @@ export function TextInput({
       let v = vRef.current
       const mod = isActionMod(k)
       const wordMod = mod || k.meta
+      const readlineBackward = isMacReadlineCtrl(k, inp, 'b')
+      const readlineForward = isMacReadlineCtrl(k, inp, 'f')
+      const readlineDeleteForward = isMacReadlineCtrl(k, inp, 'd')
       const actionHome = k.home || (!isMac && mod && inp === 'a') || isMacActionFallback(k, inp, 'a')
       const actionEnd = k.end || (mod && inp === 'e') || isMacActionFallback(k, inp, 'e')
       const actionDeleteToStart = (mod && inp === 'u') || isMacActionFallback(k, inp, 'u')
       const actionKillToEnd = (mod && inp === 'k') || isMacActionFallback(k, inp, 'k')
       const actionDeleteWord = (mod && inp === 'w') || isMacActionFallback(k, inp, 'w')
       const range = selRange()
-      const delFwd = k.delete || fwdDel.current
+      const delFwd = k.delete || fwdDel.current || readlineDeleteForward
 
       if (mod && inp === 'z') {
         return swap(undo, redo)
@@ -927,23 +931,23 @@ export function TextInput({
         moveCursor(c, k.shift)
 
         return
-      } else if (k.leftArrow) {
+      } else if (k.leftArrow || readlineBackward) {
         if (range && !wordMod && !k.shift) {
           clearSel()
           c = range.start
         } else {
-          c = wordMod ? wordLeft(v, c) : prevPos(v, c)
+          c = wordMod && !readlineBackward ? wordLeft(v, c) : prevPos(v, c)
         }
 
         moveCursor(c, k.shift)
 
         return
-      } else if (k.rightArrow) {
+      } else if (k.rightArrow || readlineForward) {
         if (range && !wordMod && !k.shift) {
           clearSel()
           c = range.end
         } else {
-          c = wordMod ? wordRight(v, c) : nextPos(v, c)
+          c = wordMod && !readlineForward ? wordRight(v, c) : nextPos(v, c)
         }
 
         moveCursor(c, k.shift)
@@ -989,6 +993,11 @@ export function TextInput({
         } else {
           v = v.slice(0, c) + v.slice(nextPos(v, c))
         }
+      } else if (delFwd) {
+        // Forward-delete at end of input is a no-op. Do not fall through to
+        // printable insertion for raw Ctrl+D on macOS, which arrives as
+        // ``inp === 'd'`` plus ``key.ctrl``.
+        return
       } else if (actionDeleteWord) {
         if (range) {
           v = v.slice(0, range.start) + v.slice(range.end)
