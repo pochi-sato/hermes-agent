@@ -321,7 +321,11 @@ cmd_prepare() {
     "$ORIGIN_REMOTE/$RUNTIME_BRANCH"
 
   section "merge $UPSTREAM_REMOTE/$UPSTREAM_BRANCH"
-  if git -C "$STAGING_WORKTREE" merge --no-edit \
+  # Spell the subject out: git's default names the branch it merged *into*,
+  # which is the throwaway staging branch, and that name then lands in the
+  # runtime branch's permanent history.
+  if git -C "$STAGING_WORKTREE" merge \
+    -m "Merge $UPSTREAM_REMOTE/$UPSTREAM_BRANCH into $RUNTIME_BRANCH" \
     "$UPSTREAM_REMOTE/$UPSTREAM_BRANCH"; then
     say "  merge clean"
   else
