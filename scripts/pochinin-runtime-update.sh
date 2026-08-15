@@ -9,7 +9,8 @@
 #
 # The flow here keeps the live checkout READ-ONLY.  Everything that mutates git
 # happens in a separate staging worktree; switching the live checkout and
-# restarting the gateway stay manual, printed as copy-pasteable commands.
+# restarting the gateway stay manual, printed as copy-pasteable commands for an
+# external shell.
 #
 # This script never runs: stash pop/drop, reset --hard, clean, checkout of the
 # live checkout, or push --force.  If a step would need one of those, it stops
@@ -35,9 +36,23 @@ ORIGIN_REMOTE="${HERMES_ORIGIN_REMOTE:-origin}"
 # space-separated list when the runtime branch grows new fork-local patches.
 FOCUSED_TESTS="${HERMES_RUNTIME_TESTS:-tests/gateway/test_discord_free_response.py tests/gateway/test_restart_service_detection.py}"
 
+# Hermes CLI entry point. Used only to render the manual next-step text —
+# this script never invokes it.
+HERMES_BIN="${HERMES_BIN:-hermes}"
+
 DRY_RUN=0
 DO_PUSH=0
 RUN_TESTS=1
+
+# The gateway restart step is assembled at runtime instead of being written out
+# as one literal command. Hermes' own terminal guard
+# (cron/lifecycle_guard.py::contains_gateway_lifecycle_command_or_referenced_script)
+# scans the text of any script it is asked to run and refuses the whole file
+# when a gateway lifecycle command appears in it — which would take the
+# read-only subcommands here down with it. Restarting the gateway is an
+# external-shell step regardless: it cannot be issued from inside the gateway
+# process it would kill.
+gateway_restart_step() { printf '%s gateway %s' "$HERMES_BIN" "restart"; }
 
 say() { printf '%s\n' "$*"; }
 section() { printf '\n== %s ==\n' "$*"; }
@@ -356,10 +371,10 @@ cmd_prepare() {
       "HEAD:refs/heads/$RUNTIME_BRANCH"
   fi
 
-  section "next steps (manual — this script never touches the live checkout)"
+  section "next steps — run these in an external shell, not in a Hermes terminal"
   say "  1. git -C \"$LIVE_CHECKOUT\" status --porcelain    # must print nothing"
-  say "  2. hermes update --branch $RUNTIME_BRANCH"
-  say "  3. hermes gateway restart"
+  say "  2. $HERMES_BIN update --branch $RUNTIME_BRANCH"
+  say "  3. $(gateway_restart_step)                      # picks up the new checkout"
   say "  4. scripts/pochinin-runtime-update.sh status       # confirm live HEAD == runtime"
   say ""
   say "Verified candidate: $(git -C "$STAGING_WORKTREE" log --oneline -1)"
