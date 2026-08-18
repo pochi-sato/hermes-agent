@@ -3431,6 +3431,71 @@ class SessionStore:
 
         return new_entry
 
+    def bind_session_key(
+        self,
+        session_key: str,
+        session_id: str,
+        *,
+        origin: Optional[SessionSource] = None,
+        display_name: Optional[str] = None,
+    ) -> Optional[SessionEntry]:
+        """Bind a NOT-yet-routed session key to an existing session ID.
+
+        Used by ``/branch --thread``: the forked session row is created with
+        the NEW thread's routing columns, and this pre-registers the in-memory
+        routing entry so the first message in that thread resumes the fork
+        without waiting for the DB recovery path. Recovery
+        (``_recover_session_from_db``) remains the durable fallback — a crash
+        between row creation and this call still yields a routable fork.
+
+        Unlike ``switch_session`` this neither requires an existing entry for
+        the key nor ends any prior session: the key must be UNBOUND. A key
+        already mapped to a different live session is refused (collision
+        guard) — binding into an occupied chat/thread would silently detach
+        its conversation.
+        """
+        if not session_key or not session_id:
+            return None
+
+        now = _now()
+        with self._lock:
+            self._ensure_loaded_locked()
+
+            existing = self._entries.get(session_key)
+            if existing is not None:
+                # Idempotent success when already pointing at the target;
+                # otherwise refuse — never steal an occupied routing key.
+                return existing if existing.session_id == session_id else None
+
+            entry = SessionEntry(
+                session_key=session_key,
+                session_id=session_id,
+                created_at=now,
+                updated_at=now,
+                origin=origin,
+                display_name=display_name
+                or (origin.chat_name if origin is not None else None),
+                platform=origin.platform if origin is not None else None,
+                chat_type=origin.chat_type if origin is not None else None,
+            )
+            self._entries[session_key] = entry
+            self._save()
+
+        if self._db:
+            # Peer refresh is self-healing (#82616): the fork row already
+            # carries its routing columns from create_session, so this is a
+            # no-op refresh in the healthy path and a repair otherwise. No
+            # compression ancestors: a freshly forked session has no lineage
+            # to re-key.
+            self._record_gateway_session_peer(
+                session_id,
+                session_key,
+                origin,
+                display_name=entry.display_name,
+            )
+
+        return entry
+
     def list_sessions(self, active_minutes: Optional[int] = None) -> List[SessionEntry]:
         """List all sessions, optionally filtered by activity."""
         with self._lock:

@@ -93,6 +93,10 @@ gateway:
     switch_failed:         "Branch created but failed to switch to it."
     branched_one:          "⑂ Branched to **{title}** ({count} message copied)\nOriginal: `{parent}`\nBranch: `{new}`\nUse `/resume` to switch back to the original."
     branched_many:         "⑂ Branched to **{title}** ({count} messages copied)\nOriginal: `{parent}`\nBranch: `{new}`\nUse `/resume` to switch back to the original."
+    thread_unsupported:    "Branching into a new thread isn't supported on this platform. Plain `/branch` still works here."
+    thread_create_failed:  "Couldn't create the thread: {error}"
+    thread_intro:          "⑂ **{title}** — forked from the parent conversation with {count} messages of context. This thread continues independently; the original conversation is untouched. (`/resume {title}` re-attaches this session if it ever resets.)"
+    thread_branched:       "⑂ Forked into {link} as **{title}** ({count} messages of context)\nThis conversation stays on its current session — both continue independently.\nFork session: `{new}`"
 
   commands:
     usage:                 "Usage: `/commands [page]`"

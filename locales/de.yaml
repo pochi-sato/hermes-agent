@@ -78,6 +78,10 @@ gateway:
     switch_failed:         "Verzweigung erstellt, aber Wechsel fehlgeschlagen."
     branched_one:          "⑂ Verzweigt zu **{title}** ({count} Nachricht kopiert)\nOriginal: `{parent}`\nZweig: `{new}`\nVerwenden Sie `/resume`, um zum Original zurückzukehren."
     branched_many:         "⑂ Verzweigt zu **{title}** ({count} Nachrichten kopiert)\nOriginal: `{parent}`\nZweig: `{new}`\nVerwenden Sie `/resume`, um zum Original zurückzukehren."
+    thread_unsupported:    "Die Verzweigung in einen neuen Thread wird auf dieser Plattform nicht unterstützt. Das normale `/branch` funktioniert hier weiterhin."
+    thread_create_failed:  "Thread konnte nicht erstellt werden: {error}"
+    thread_intro:          "⑂ **{title}** — abgezweigt vom ursprünglichen Gespräch mit {count} Nachrichten Kontext. Dieser Thread läuft unabhängig weiter; das ursprüngliche Gespräch bleibt unberührt. (`/resume {title}` verbindet diese Sitzung wieder, falls sie jemals zurückgesetzt wird.)"
+    thread_branched:       "⑂ In {link} als **{title}** verzweigt ({count} Nachrichten Kontext)\nDieses Gespräch bleibt auf seiner aktuellen Sitzung — beide laufen unabhängig weiter.\nVerzweigungs-Sitzung: `{new}`"
 
   commands:
     usage:                 "Verwendung: `/commands [page]`"

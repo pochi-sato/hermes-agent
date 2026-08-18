@@ -78,6 +78,10 @@ gateway:
     switch_failed:         "Tak is geskep, maar oorskakeling het misluk."
     branched_one:          "⑂ Vertak na **{title}** ({count} boodskap gekopieer)\nOorspronklik: `{parent}`\nTak: `{new}`\nGebruik `/resume` om terug te gaan na die oorspronklike."
     branched_many:         "⑂ Vertak na **{title}** ({count} boodskappe gekopieer)\nOorspronklik: `{parent}`\nTak: `{new}`\nGebruik `/resume` om terug te gaan na die oorspronklike."
+    thread_unsupported:    "Vertakking na 'n nuwe draad word nie op hierdie platform ondersteun nie. Gewone `/branch` werk steeds hier."
+    thread_create_failed:  "Kon nie die draad skep nie: {error}"
+    thread_intro:          "⑂ **{title}** — tak geskep vanaf die oorspronklike gesprek met {count} boodskappe se konteks. Hierdie draad gaan onafhanklik voort; die oorspronklike gesprek bly onaangeraak. (`/resume {title}` heg hierdie sessie weer aan as dit ooit teruggestel word.)"
+    thread_branched:       "⑂ Tak geskep in {link} as **{title}** ({count} boodskappe se konteks)\nHierdie gesprek bly op sy huidige sessie — albei gaan onafhanklik voort.\nTak-sessie: `{new}`"
 
   commands:
     usage:                 "Gebruik: `/commands [page]`"

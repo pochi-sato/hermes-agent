@@ -4942,7 +4942,25 @@ class GatewaySlashCommandsMixin:
         if not history:
             return t("gateway.branch.no_conversation")
 
-        branch_name = event.get_command_args().strip()
+        raw_args = event.get_command_args().strip()
+        # `/branch --thread [name]` — fork into a NEW platform thread instead
+        # of switching this chat. The flag wins over a literal branch name of
+        # "--thread" (documented trade-off; see docs/pochinin-fork-thread-bind-review.md).
+        arg_tokens = raw_args.split()
+        branch_to_thread = "--thread" in arg_tokens
+        if branch_to_thread:
+            branch_name = " ".join(
+                tok for tok in arg_tokens if tok != "--thread"
+            ).strip()
+            return await self._handle_branch_to_thread(
+                event,
+                source=source,
+                current_entry=current_entry,
+                history=history,
+                branch_name=branch_name,
+            )
+
+        branch_name = raw_args
 
         # Generate the new session ID
         from datetime import datetime as _dt
@@ -5069,6 +5087,201 @@ class GatewaySlashCommandsMixin:
         msg_count = len([m for m in history if m.get("role") == "user"])
         key = "gateway.branch.branched_one" if msg_count == 1 else "gateway.branch.branched_many"
         return t(key, title=branch_title, count=msg_count, parent=parent_session_id, new=new_session_id)
+
+    async def _handle_branch_to_thread(
+        self,
+        event: MessageEvent,
+        *,
+        source,
+        current_entry,
+        history,
+        branch_name: str,
+    ) -> str:
+        """Handle ``/branch --thread [name]`` — fork into a NEW platform thread.
+
+        Creates a new thread via the platform adapter's optional
+        ``create_session_thread`` capability, copies this conversation into a
+        forked session whose routing columns point at THAT thread, and binds
+        the thread's session key to the fork. The CURRENT chat keeps its
+        session untouched: no switch_session, no parent end, no agent-cache
+        eviction, no conversation-scope clearing — both conversations continue
+        independently from the fork point.
+        """
+        import uuid as _uuid
+
+        adapter = self.adapters.get(source.platform) if getattr(self, "adapters", None) else None
+        create_thread = getattr(adapter, "create_session_thread", None)
+        if not callable(create_thread):
+            return t("gateway.branch.thread_unsupported")
+
+        # Determine the fork title first — it doubles as the thread name.
+        if branch_name:
+            branch_title = branch_name
+        else:
+            current_title = await self._session_db.get_session_title(current_entry.session_id)
+            base = current_title or "branch"
+            branch_title = await self._session_db.get_next_title_in_lineage(base)
+
+        # Create the thread BEFORE any session row: a failed creation must
+        # leave zero session-side effects (an orphan empty thread on the
+        # reverse ordering would be harmless, but an unroutable fork row is
+        # not — see the #82633 crash-window analysis).
+        try:
+            result = await create_thread(
+                chat_id=source.chat_id,
+                thread_id=source.thread_id,
+                name=branch_title,
+                requested_by=source.user_name or source.user_id or "",
+            )
+        except Exception as e:
+            logger.error("create_session_thread failed: %s", e)
+            result = {"error": str(e)}
+        if not result.get("success"):
+            return t(
+                "gateway.branch.thread_create_failed",
+                error=result.get("error", "unknown error"),
+            )
+        new_thread_id = str(result["thread_id"])
+        new_thread_name = result.get("thread_name") or branch_title
+
+        # The new thread's source, matching what its REAL inbound messages
+        # will carry (Discord: chat_id == thread_id == the thread's channel
+        # id, chat_type "thread" — adapter._thread_id_and_chat_for_channel).
+        # Clear per-message and auto-thread fields so the routing key derives
+        # purely from the thread identity; a leftover prospective_thread_id
+        # would not change the key (thread_id wins) but must not linger in
+        # the persisted origin.
+        new_source = dataclasses.replace(
+            source,
+            chat_id=new_thread_id,
+            chat_type="thread",
+            thread_id=new_thread_id,
+            chat_name=new_thread_name,
+            parent_chat_id=str(result.get("parent_channel_id") or source.chat_id or "") or None,
+            message_id=None,
+            prospective_thread_id=None,
+            auto_thread_created=False,
+            auto_thread_initial_name=None,
+        )
+        # Single source of truth for key construction — never hand-format.
+        new_session_key = self._session_key_for_source(new_source)
+
+        from datetime import datetime as _dt
+        timestamp_str = _dt.now().strftime("%Y%m%d_%H%M%S")
+        new_session_id = f"{timestamp_str}_{_uuid.uuid4().hex[:6]}"
+        parent_session_id = current_entry.session_id
+
+        try:
+            import json as _json
+            _origin_json = _json.dumps(new_source.to_dict())
+        except Exception:
+            _origin_json = None
+
+        # Same create-time completeness contract as /branch (#82633): ALL
+        # routing columns land in the same write as the row, so a crash
+        # anywhere after this point still leaves the fork recoverable by
+        # find_latest_gateway_session_for_peer from the new thread. The
+        # ``_branched_from`` marker is equally load-bearing here: it keeps
+        # the fork out of the parent's compression-lineage reads (post-fork
+        # parent messages must not leak in) and keeps it listable without
+        # ending the parent — this flow, unlike /branch, leaves the parent
+        # session live under the current chat.
+        try:
+            await self._session_db.create_session(
+                session_id=new_session_id,
+                source=source.platform.value if source.platform else "gateway",
+                model=(self.config.get("model", {}) or {}).get("default") if isinstance(self.config, dict) else None,
+                model_config={"_branched_from": parent_session_id},
+                parent_session_id=parent_session_id,
+                user_id=source.user_id,
+                session_key=new_session_key,
+                chat_id=new_thread_id,
+                chat_type="thread",
+                thread_id=new_thread_id,
+                origin_json=_origin_json,
+                display_name=new_thread_name,
+            )
+        except Exception as e:
+            logger.error("Failed to create thread-branch session: %s", e)
+            return t("gateway.branch.create_failed", error=e)
+
+        # Copy conversation history — identical projection to /branch:
+        # api_content sidecar preserved (warm provider prompt cache),
+        # platform_message_id intentionally dropped (it references messages
+        # in the OLD thread), bounded-chunk transactions (#23254),
+        # best-effort like /branch.
+        try:
+            await self._session_db.append_messages_batch(
+                new_session_id,
+                [
+                    {
+                        "role": msg.get("role", "user"),
+                        "content": msg.get("content"),
+                        "tool_name": msg.get("tool_name") or msg.get("name"),
+                        "tool_calls": msg.get("tool_calls"),
+                        "tool_call_id": msg.get("tool_call_id"),
+                        "finish_reason": msg.get("finish_reason"),
+                        "reasoning": msg.get("reasoning"),
+                        "reasoning_content": msg.get("reasoning_content"),
+                        "reasoning_details": msg.get("reasoning_details"),
+                        "codex_reasoning_items": msg.get("codex_reasoning_items"),
+                        "codex_message_items": msg.get("codex_message_items"),
+                        "api_content": extract_api_content_sidecar(msg),
+                        "timestamp": msg.get("timestamp"),
+                    }
+                    for msg in history
+                ],
+                chunk_rows=500,
+            )
+        except Exception:
+            pass  # Best-effort copy
+
+        try:
+            await self._session_db.set_session_title(new_session_id, branch_title)
+        except Exception:
+            pass
+
+        # Pre-bind the new thread's routing key in memory. The DB recovery
+        # path (routing columns written above) remains the durable fallback,
+        # so a bind failure is logged, not fatal.
+        bound = await self.async_session_store.bind_session_key(
+            new_session_key,
+            new_session_id,
+            origin=new_source,
+            display_name=new_thread_name,
+        )
+        if bound is None:
+            logger.warning(
+                "bind_session_key refused for %s -> %s (occupied or invalid); "
+                "relying on DB recovery",
+                new_session_key, new_session_id,
+            )
+
+        msg_count = len([m for m in history if m.get("role") == "user"])
+
+        # Best-effort intro inside the new thread. Bot-authored, so it does
+        # not create/advance any session; it also carries the fork title as
+        # a /resume handle in case a later reset boundary orphans the bind.
+        try:
+            await adapter.send(
+                new_thread_id,
+                t(
+                    "gateway.branch.thread_intro",
+                    title=branch_title,
+                    count=msg_count,
+                ),
+            )
+        except Exception:
+            pass
+
+        link = f"<#{new_thread_id}>" if source.platform == Platform.DISCORD else new_thread_name
+        return t(
+            "gateway.branch.thread_branched",
+            title=branch_title,
+            link=link,
+            count=msg_count,
+            new=new_session_id,
+        )
 
     async def _handle_topup_command(self, event: MessageEvent) -> str:
         """Handle /topup -- show the Nous balance and hand off to the portal.

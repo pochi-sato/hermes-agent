@@ -82,6 +82,10 @@ gateway:
     switch_failed:         "Cruthaíodh an brainse ach theip ar athrú chuige."
     branched_one:          "⑂ Brainseáilte go **{title}** ({count} teachtaireacht cóipeáilte)\nBunaidh: `{parent}`\nBrainse: `{new}`\nÚsáid `/resume` chun filleadh ar an mbunaidh."
     branched_many:         "⑂ Brainseáilte go **{title}** ({count} teachtaireacht cóipeáilte)\nBunaidh: `{parent}`\nBrainse: `{new}`\nÚsáid `/resume` chun filleadh ar an mbunaidh."
+    thread_unsupported:    "Ní thacaítear le brainse a chruthú i snáithe nua ar an ardán seo. Oibríonn gnáth-`/branch` anseo i gcónaí."
+    thread_create_failed:  "Níorbh fhéidir an snáithe a chruthú: {error}"
+    thread_intro:          "⑂ **{title}** — brainse ón mbunchomhrá le {count} teachtaireacht de chomhthéacs. Leanann an snáithe seo ar aghaidh go neamhspleách; fanann an bunchomhrá gan athrú. (Athcheanglaíonn `/resume {title}` an seisiún seo má athshocraítear é riamh.)"
+    thread_branched:       "⑂ Brainse cruthaithe i {link} mar **{title}** ({count} teachtaireacht de chomhthéacs)\nFanann an comhrá seo ar a sheisiún reatha — leanann an dá cheann ar aghaidh go neamhspleách.\nSeisiún an bhrainse: `{new}`"
 
   commands:
     usage:                 "Úsáid: `/commands [page]`"

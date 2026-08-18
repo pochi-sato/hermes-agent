@@ -78,6 +78,10 @@ gateway:
     switch_failed:         "分支已创建，但无法切换到它。"
     branched_one:          "⑂ 已分支到 **{title}**（已复制 {count} 条消息）\n原始：`{parent}`\n分支：`{new}`\n使用 `/resume` 切换回原始会话。"
     branched_many:         "⑂ 已分支到 **{title}**（已复制 {count} 条消息）\n原始：`{parent}`\n分支：`{new}`\n使用 `/resume` 切换回原始会话。"
+    thread_unsupported:    "此平台不支持分支到新线程。普通的 `/branch` 在这里仍然可用。"
+    thread_create_failed:  "无法创建线程：{error}"
+    thread_intro:          "⑂ **{title}** — 从原对话分支，继承 {count} 条消息上下文。此线程将独立继续；原对话不受影响。（如果会话被重置，可用 `/resume {title}` 重新连接。）"
+    thread_branched:       "⑂ 已分支到 {link}，名为 **{title}**（{count} 条消息上下文）\n当前对话保持原会话不变 — 两者将独立继续。\n分支会话：`{new}`"
 
   commands:
     usage:                 "用法：`/commands [page]`"

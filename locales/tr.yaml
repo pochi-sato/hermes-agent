@@ -78,6 +78,10 @@ gateway:
     switch_failed:         "Dal oluşturuldu ancak ona geçilemedi."
     branched_one:          "⑂ **{title}** dalına geçildi ({count} mesaj kopyalandı)\nOrijinal: `{parent}`\nDal: `{new}`\nOrijinale geri dönmek için `/resume` kullanın."
     branched_many:         "⑂ **{title}** dalına geçildi ({count} mesaj kopyalandı)\nOrijinal: `{parent}`\nDal: `{new}`\nOrijinale geri dönmek için `/resume` kullanın."
+    thread_unsupported:    "Bu platformda yeni bir alt başlığa dallanma desteklenmiyor. Normal `/branch` burada çalışmaya devam eder."
+    thread_create_failed:  "Alt başlık oluşturulamadı: {error}"
+    thread_intro:          "⑂ **{title}** — özgün konuşmadan {count} mesajlık bağlamla dallandı. Bu alt başlık bağımsız olarak devam eder; özgün konuşma olduğu gibi kalır. (Oturum sıfırlanırsa `/resume {title}` bu oturumu yeniden bağlar.)"
+    thread_branched:       "⑂ {link} içine **{title}** olarak dallandı ({count} mesajlık bağlam)\nBu konuşma mevcut oturumunda kalır — ikisi de bağımsız olarak devam eder.\nDal oturumu: `{new}`"
 
   commands:
     usage:                 "Kullanım: `/commands [page]`"

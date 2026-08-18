@@ -78,6 +78,10 @@ gateway:
     switch_failed:         "분기는 생성되었으나 전환에 실패했습니다."
     branched_one:          "⑂ **{title}**(으)로 분기했습니다 (메시지 {count}개 복사됨)\n원본: `{parent}`\n분기: `{new}`\n원본으로 돌아가려면 `/resume`을 사용하세요."
     branched_many:         "⑂ **{title}**(으)로 분기했습니다 (메시지 {count}개 복사됨)\n원본: `{parent}`\n분기: `{new}`\n원본으로 돌아가려면 `/resume`을 사용하세요."
+    thread_unsupported:    "이 플랫폼에서는 새 스레드로의 분기를 지원하지 않습니다. 일반 `/branch`는 여기서도 사용할 수 있습니다."
+    thread_create_failed:  "스레드를 만들지 못했습니다: {error}"
+    thread_intro:          "⑂ **{title}** — 원본 대화에서 메시지 {count}개의 컨텍스트를 이어받아 분기했습니다. 이 스레드는 독립적으로 계속됩니다. 원본 대화는 그대로 유지됩니다. (세션이 초기화되면 `/resume {title}`(으)로 다시 연결할 수 있습니다.)"
+    thread_branched:       "⑂ {link}에 **{title}**(으)로 분기했습니다 (메시지 {count}개 컨텍스트)\n이 대화는 현재 세션을 유지합니다 — 둘 다 독립적으로 계속됩니다.\n분기 세션: `{new}`"
 
   commands:
     usage:                 "사용법: `/commands [page]`"

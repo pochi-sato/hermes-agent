@@ -78,6 +78,10 @@ gateway:
     switch_failed:         "Az ág létrejött, de nem sikerült rá váltani."
     branched_one:          "⑂ Új ág: **{title}** ({count} üzenet másolva)\nEredeti: `{parent}`\nÁg: `{new}`\nHasználd a `/resume` parancsot az eredetihez való visszatéréshez."
     branched_many:         "⑂ Új ág: **{title}** ({count} üzenet másolva)\nEredeti: `{parent}`\nÁg: `{new}`\nHasználd a `/resume` parancsot az eredetihez való visszatéréshez."
+    thread_unsupported:    "Új szálba ágaztatás ezen a platformon nem támogatott. A sima `/branch` itt továbbra is működik."
+    thread_create_failed:  "Nem sikerült létrehozni a szálat: {error}"
+    thread_intro:          "⑂ **{title}** — az eredeti beszélgetésből ágaztatva {count} üzenetnyi kontextussal. Ez a szál önállóan folytatódik; az eredeti beszélgetés érintetlen marad. (`/resume {title}` újracsatolja ezt a munkamenetet, ha valaha visszaállna.)"
+    thread_branched:       "⑂ Elágaztatva ide: {link}, **{title}** néven ({count} üzenetnyi kontextus)\nEz a beszélgetés a jelenlegi munkameneten marad — mindkettő önállóan folytatódik.\nAz ág munkamenete: `{new}`"
 
   commands:
     usage:                 "Használat: `/commands [page]`"

@@ -78,6 +78,10 @@ gateway:
     switch_failed:         "Rama creada pero no se pudo cambiar a ella."
     branched_one:          "⑂ Ramificado a **{title}** ({count} mensaje copiado)\nOriginal: `{parent}`\nRama: `{new}`\nUsa `/resume` para volver al original."
     branched_many:         "⑂ Ramificado a **{title}** ({count} mensajes copiados)\nOriginal: `{parent}`\nRama: `{new}`\nUsa `/resume` para volver al original."
+    thread_unsupported:    "La bifurcación a un hilo nuevo no está soportada en esta plataforma. El `/branch` normal sigue funcionando aquí."
+    thread_create_failed:  "No se pudo crear el hilo: {error}"
+    thread_intro:          "⑂ **{title}** — rama creada desde la conversación original con {count} mensajes de contexto. Este hilo continúa de forma independiente; la conversación original queda intacta. (`/resume {title}` vuelve a conectar esta sesión si alguna vez se reinicia.)"
+    thread_branched:       "⑂ Rama creada en {link} como **{title}** ({count} mensajes de contexto)\nEsta conversación permanece en su sesión actual — ambas continúan de forma independiente.\nSesión de la rama: `{new}`"
 
   commands:
     usage:                 "Uso: `/commands [page]`"

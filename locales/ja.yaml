@@ -78,6 +78,10 @@ gateway:
     switch_failed:         "ブランチは作成されましたが、切り替えに失敗しました。"
     branched_one:          "⑂ **{title}** に分岐しました ({count} メッセージをコピー)\n元: `{parent}`\nブランチ: `{new}`\n元のセッションに戻るには `/resume` を使用してください。"
     branched_many:         "⑂ **{title}** に分岐しました ({count} メッセージをコピー)\n元: `{parent}`\nブランチ: `{new}`\n元のセッションに戻るには `/resume` を使用してください。"
+    thread_unsupported:    "このプラットフォームでは新しいスレッドへの分岐はサポートされていません。通常の `/branch` はここでも使えます。"
+    thread_create_failed:  "スレッドを作成できませんでした: {error}"
+    thread_intro:          "⑂ **{title}** — 元の会話から {count} 件のメッセージを引き継いで分岐しました。このスレッドは独立して続きます。元の会話には影響ありません。(セッションがリセットされた場合は `/resume {title}` で再接続できます。)"
+    thread_branched:       "⑂ {link} に **{title}** として分岐しました ({count} 件のメッセージを引き継ぎ)\nこの会話は現在のセッションのまま続きます — 両方が独立して進みます。\n分岐セッション: `{new}`"
 
   commands:
     usage:                 "使い方: `/commands [page]`"

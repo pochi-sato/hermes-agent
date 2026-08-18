@@ -78,6 +78,10 @@ gateway:
     switch_failed:         "Branche créée mais impossible de basculer dessus."
     branched_one:          "⑂ Branche **{title}** créée ({count} message copié)\nOriginal : `{parent}`\nBranche : `{new}`\nUtilisez `/resume` pour revenir à l'original."
     branched_many:         "⑂ Branche **{title}** créée ({count} messages copiés)\nOriginal : `{parent}`\nBranche : `{new}`\nUtilisez `/resume` pour revenir à l'original."
+    thread_unsupported:    "La création d'une branche dans un nouveau fil n'est pas prise en charge sur cette plateforme. Le `/branch` classique fonctionne toujours ici."
+    thread_create_failed:  "Impossible de créer le fil : {error}"
+    thread_intro:          "⑂ **{title}** — branche créée depuis la conversation d'origine avec {count} messages de contexte. Ce fil continue indépendamment ; la conversation d'origine reste intacte. (`/resume {title}` rattache cette session si elle est un jour réinitialisée.)"
+    thread_branched:       "⑂ Branche créée dans {link} sous le nom **{title}** ({count} messages de contexte)\nCette conversation reste sur sa session actuelle — les deux continuent indépendamment.\nSession de la branche : `{new}`"
 
   commands:
     usage:                 "Utilisation : `/commands [page]`"

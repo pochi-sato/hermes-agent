@@ -78,6 +78,10 @@ gateway:
     switch_failed:         "Ramo criado, mas não foi possível mudar para ele."
     branched_one:          "⑂ Ramificado para **{title}** ({count} mensagem copiada)\nOriginal: `{parent}`\nRamo: `{new}`\nUsa `/resume` para voltar ao original."
     branched_many:         "⑂ Ramificado para **{title}** ({count} mensagens copiadas)\nOriginal: `{parent}`\nRamo: `{new}`\nUsa `/resume` para voltar ao original."
+    thread_unsupported:    "Criar um ramo em uma nova thread não é suportado nesta plataforma. O `/branch` normal continua funcionando aqui."
+    thread_create_failed:  "Não foi possível criar a thread: {error}"
+    thread_intro:          "⑂ **{title}** — ramo criado a partir da conversa original com {count} mensagens de contexto. Esta thread continua de forma independente; a conversa original permanece intacta. (`/resume {title}` reconecta esta sessão caso ela seja reiniciada.)"
+    thread_branched:       "⑂ Ramo criado em {link} como **{title}** ({count} mensagens de contexto)\nEsta conversa permanece na sessão atual — ambas continuam de forma independente.\nSessão do ramo: `{new}`"
 
   commands:
     usage:                 "Uso: `/commands [page]`"

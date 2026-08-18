@@ -7155,6 +7155,94 @@ class DiscordAdapter(BasePlatformAdapter):
                     )
                 }
 
+    async def create_session_thread(
+        self,
+        *,
+        chat_id: str,
+        thread_id: Optional[str] = None,
+        name: str,
+        requested_by: str = "",
+        auto_archive_duration: int = 1440,
+    ) -> Dict[str, Any]:
+        """Create a thread for a gateway-initiated session bind (/branch --thread).
+
+        Optional platform capability: the gateway feature-gates on this
+        method's presence, so only thread-capable adapters implement it.
+        Unlike ``_create_thread`` (interaction-scoped) the target channel is
+        resolved by id; invoked from inside a thread, the new thread is
+        created on that thread's PARENT channel (Discord threads don't nest).
+        Returns ``{"success", "thread_id", "thread_name", "parent_channel_id"}``
+        or ``{"error": ...}``.
+        """
+        name = (name or "").strip()
+        if not name:
+            return {"error": "Thread name is required."}
+        if auto_archive_duration not in VALID_THREAD_AUTO_ARCHIVE_MINUTES:
+            allowed = ", ".join(str(v) for v in sorted(VALID_THREAD_AUTO_ARCHIVE_MINUTES))
+            return {"error": f"auto_archive_duration must be one of: {allowed}."}
+        if not self._client:
+            return {"error": "Discord client is not connected."}
+
+        resolve_id = thread_id or chat_id
+        if not resolve_id:
+            return {"error": "Could not resolve the current Discord channel."}
+        try:
+            channel = self._client.get_channel(int(resolve_id))
+            if channel is None:
+                channel = await self._client.fetch_channel(int(resolve_id))
+        except Exception as e:
+            return {"error": f"Could not resolve Discord channel {resolve_id}: {e}"}
+        if channel is None:
+            return {"error": "Could not resolve the current Discord channel."}
+        if isinstance(channel, discord.DMChannel):
+            return {"error": "Discord threads can only be created inside server text channels, not DMs."}
+
+        parent_channel = self._thread_parent_channel(channel)
+        if parent_channel is None:
+            return {"error": "Could not determine a parent text channel for the new thread."}
+
+        reason = f"Requested by {requested_by or 'unknown user'} via /branch --thread"
+        try:
+            thread = await parent_channel.create_thread(
+                name=name,
+                auto_archive_duration=auto_archive_duration,
+                reason=reason,
+            )
+        except Exception as direct_error:
+            # Same seed-message fallback as _create_thread: some channel
+            # types / permission setups only allow message-anchored threads.
+            try:
+                seed_msg = await parent_channel.send(
+                    f"\U0001f9f5 Thread created by Hermes: **{name}**"
+                )
+                thread = await seed_msg.create_thread(
+                    name=name,
+                    auto_archive_duration=auto_archive_duration,
+                    reason=reason,
+                )
+            except Exception as fallback_error:
+                return {
+                    "error": (
+                        "Discord rejected direct thread creation and the fallback also failed. "
+                        f"Direct error: {direct_error}. Fallback error: {fallback_error}"
+                    )
+                }
+
+        new_thread_id = str(thread.id)
+        # Participation mark: without it, follow-ups in the forked thread
+        # would require an @mention before Hermes answers (same contract as
+        # the /thread app command).
+        try:
+            self._threads.mark(new_thread_id)
+        except Exception:
+            pass
+        return {
+            "success": True,
+            "thread_id": new_thread_id,
+            "thread_name": getattr(thread, "name", None) or name,
+            "parent_channel_id": str(getattr(parent_channel, "id", "") or "") or None,
+        }
+
     # ------------------------------------------------------------------
     # Auto-thread helpers
     # ------------------------------------------------------------------
