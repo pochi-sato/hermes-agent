@@ -210,9 +210,24 @@ async def test_mcp_server(name: str, profile: Optional[str] = None):
             "error": "OAuth authentication required — no token found.",
             "tools": [],
         }
+    # Additive-optional per-tool schema size (chars of the converted registry
+    # schema) — the desktop's cost overlay estimates tokens from it. Older
+    # renderers ignore the extra key; failed probes simply omit it.
+    schema_chars = details.get("schema_chars") or {}
     return {
         "ok": True,
-        "tools": [{"name": t, "description": d} for t, d in tools],
+        "tools": [
+            {
+                "name": t,
+                "description": d,
+                **(
+                    {"schema_chars": schema_chars[t]}
+                    if isinstance(schema_chars.get(t), int)
+                    else {}
+                ),
+            }
+            for t, d in tools
+        ],
         "prompts": details.get("prompts", 0),
         "resources": details.get("resources", 0),
     }
@@ -488,8 +503,31 @@ async def install_mcp_catalog_entry(body: MCPCatalogInstall, profile: Optional[s
     if entry is None:
         raise HTTPException(status_code=404, detail=f"No catalog entry '{name}'")
 
-    # Persist any supplied env vars first (catalog entries declare which names
-    # they need; we only write the ones the user provided).
+    # Catalog credentials are a closed schema: configuring one MCP must not
+    # become a generic write primitive for unrelated process environment.
+    declared_env = {spec.name for spec in (entry.auth.env or [])}
+    undeclared_env = sorted(set(body.env) - declared_env)
+    if undeclared_env:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Catalog entry '{name}' does not declare environment "
+                f"variable(s): {', '.join(undeclared_env)}"
+            ),
+        )
+
+    # Validate the complete map before the first write. This preserves the
+    # existing writer/install flow while ensuring a mixed valid+invalid request
+    # cannot partially persist credentials.
+    from hermes_cli.config import validate_env_var_name_for_write
+
+    try:
+        for key in body.env:
+            validate_env_var_name_for_write(key)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    # Persist any supplied, declared env vars first.
     effective_profile = body.profile or profile
     if body.env:
         def _write_env():
